@@ -1,9 +1,26 @@
 const Tour = require('./../models/tourModel');
 const mongoose = require('mongoose');
+
 // HANDLERS
 exports.getAllTours = async (req, res) => {
   try {
-    const tours = await Tour.find();
+    // BUILD QUERY
+    const queryObj = { ...req.query };
+    const excludeFields = ['page', 'sort', 'limit', 'fields'];
+
+    excludeFields.forEach((ele) => {
+      delete queryObj[ele];
+    });
+    const query = Tour.find(queryObj);
+
+    // const query = Tour.find()
+    //   .where('difficulty')
+    //   .equals('easy')
+    //   .where('duration')
+    //   .equals(5);
+
+    // EXECUTE QUERY
+    const tours = await query;
 
     res.status(200).json({
       status: 'success',
