@@ -1,5 +1,5 @@
 const express = require('express');
-const qs = require('qs');
+// const qs = require('qs');
 
 const app = express();
 const morgan = require('morgan');
@@ -26,7 +26,7 @@ app.use(express.json()); // middleware for parsing JSON data: inbuilt
 app.use(express.static(`${__dirname}/public`));
 
 // SETTING DEFAULT PARSER AS 'qs' FOR FILTERING QUERY
-app.set('query parser', (str) => qs.parse(str));
+// app.set('query parser', (str) => qs.parse(str));
 
 // 3) ROUTES
 app.use('/api/v1/tours', tourRouter);

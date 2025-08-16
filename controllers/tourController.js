@@ -1,13 +1,21 @@
 const Tour = require('./../models/tourModel');
 const mongoose = require('mongoose');
 
+// CUSTOM-MIDDLEWARE
+exports.aliasTopTours = (req, res, next) => {
+  req.query.limit = '5';
+  req.query.sort = '-ratingsAverage,price';
+  req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
+  next();
+};
+
 // HANDLERS
 exports.getAllTours = async (req, res) => {
   try {
-    // console.log(`req.query > `, req.query);
+    console.log(`req.query > `, req.query);
 
     // BUILD QUERY
-    // 1) Filtering
+    // 1A) Filtering
     const queryObj = { ...req.query };
 
     const excludeFields = ['page', 'sort', 'limit', 'fields'];
@@ -15,17 +23,49 @@ exports.getAllTours = async (req, res) => {
       delete queryObj[ele];
     });
 
-    // 2) Advanced Filtering
+    // 1B) Advanced Filtering
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-    // PARSING STRING TO OBJCET
-    console.log(JSON.parse(queryStr));
+
+    // PARSING STRING TO OBJECT
+    console.log('parsing > ', JSON.parse(queryStr)); // view only for Filtering
     // O/P: { duration: { '$gte': '5' }, difficulty: 'easy' }
 
-    // WE WANT : { duration: { $gte: 5 }, difficulty: 'easy' }
-    // QUERY : { duration: { gte: '5' }, difficulty: 'easy' }
+    let query = Tour.find(JSON.parse(queryStr));
+    // NOTE : for sorting it is like
+    // let query = Tour.find({}); // fetching all records
 
-    const query = Tour.find(JSON.parse(queryStr));
+    // 2) Sorting
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      // console.log(`sortBy >`, sortBy);
+      query = query.sort(sortBy);
+      // query = query.sort(req.query.sort);
+    } else {
+      query = query.sort('-createdAt');
+    }
+
+    // 3) Field limiting
+    if (req.query.fields) {
+      const fields = req.query.fields.split(',').join(' ');
+      query = query.select(fields);
+    } else {
+      query = query.select('-__v');
+    }
+
+    // 4) Pagination
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 100;
+    const skip = (page - 1) * limit;
+
+    console.log(`skip`, skip);
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+      if (skip >= numTours) throw new Error('This page does not exists');
+    }
+
+    query = query.skip(skip).limit(limit);
 
     // EXECUTE QUERY
     const tours = await query;
