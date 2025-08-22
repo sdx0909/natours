@@ -6,8 +6,8 @@ dotenv.config();
 
 // CONNECTING TO DB
 mongoose
-  // .connect(process.env.DATABASE_LOCAL)
-  .connect(process.env.DATABASE)
+  .connect(process.env.DATABASE_LOCAL)
+  // .connect(process.env.DATABASE)
   .then((con) => {
     console.log('DB connection successful!');
   })
@@ -53,5 +53,6 @@ if (process.argv[2] === '--import') {
 // OUTPUT:
 // [
 //   'C:\\Program Files\\nodejs\\node.exe',
-//   'D:\\Udemy-Nodejs\\natours\\dev-data\\data\\import-dev-data.js'
+//   'D:\\Udemy-Nodejs\\natours\\dev-data\\data\\import-dev-data.js',
+//   '--import'
 // ]
