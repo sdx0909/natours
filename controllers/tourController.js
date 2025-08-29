@@ -127,4 +127,105 @@ exports.deleteTour = async (req, res) => {
     });
   }
 };
-const tourSchema = new mongoose.Schema();
+
+exports.getTourStats = async (req, res) => {
+  try {
+    const stats = await Tour.aggregate([
+      {
+        // (OPTIONAL)
+        $match: { ratingsAverage: { $gte: 4.5 } },
+      },
+      {
+        $group: {
+          _id: { $toUpper: '$difficulty' }, // GROUP BY difficulty
+          // _id: '$ratingsAverage', // GROUP BY ratingsAverage
+          // _id: null, // FOR WHOLE DATA
+          numTours: { $sum: 1 },
+          numRatings: { $sum: '$ratingsQuantity' },
+          avgRating: { $avg: '$ratingsAverage' },
+          avgPrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' },
+        },
+      },
+      {
+        $sort: { avgPrice: 1 },
+      },
+      // ADVANCED MATCHING
+      // {
+      //   $match: { _id: { $ne: 'EASY' } },
+      // },
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: stats,
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: 'fail',
+      message: err,
+    });
+  }
+};
+
+exports.getMonthlyPlan = async (req, res) => {
+  try {
+    const year = req.params.year * 1;
+
+    // go with step by step
+    const plan = await Tour.aggregate([
+      // seperating array elements into individual document
+      {
+        $unwind: '$startDates',
+      },
+      // startdate within respective year
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-01-01`), // start-date-of-year
+            $lte: new Date(`${year}-12-31`), // last-date-of-year
+          },
+        },
+      },
+      // grouping and showing how many tours within a month
+      {
+        $group: {
+          _id: { $month: '$startDates' },
+          numTourStarts: { $sum: 1 },
+          tours: { $push: '$name' },
+        },
+      },
+      // adding new field in data with month value
+      {
+        $addFields: {
+          month: '$_id',
+        },
+      },
+      // remove _id in projection
+      {
+        $project: { _id: 0 },
+      },
+      // sort the data in descending order
+      {
+        $sort: {
+          numTourStarts: -1,
+        },
+      },
+      {
+        $limit: 12, // for 12 months
+      },
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      results: plan.length,
+      data: plan,
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: 'fail',
+      message: err,
+    });
+  }
+};
