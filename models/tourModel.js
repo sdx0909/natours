@@ -92,7 +92,6 @@ tourSchema.pre('save', function (next) {
 // });
 
 // QUERY MIDDLEWARE: runs before .find()
-
 // limited scope ::> not usuable for .findById(),findBy..
 // for that we use regular expression /^find/
 
@@ -100,9 +99,24 @@ tourSchema.pre('save', function (next) {
 tourSchema.pre(/^find/, function (next) {
   // not consider secrete tour
   this.find({ secretTour: { $ne: true } });
+
+  this.start = Date.now();
   next();
 });
 
+tourSchema.post(/^find/, function (docs, next) {
+  console.log(`Query took ${Date.now() - this.start} miliseconds`);
+
+  // console.log(docs);
+  next();
+});
+
+// AGGREGATE MIDDLEWARE
+tourSchema.pre('aggregate', function (next) {
+  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+  console.log(this.pipeline());
+  next();
+});
 const Tour = mongoose.model('Tour', tourSchema);
 
 module.exports = Tour;
