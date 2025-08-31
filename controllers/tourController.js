@@ -220,7 +220,7 @@ exports.getMonthlyPlan = async (req, res) => {
     res.status(200).json({
       status: 'success',
       results: plan.length,
-      data: plan, 
+      data: plan,
     });
   } catch (err) {
     res.status(400).json({
